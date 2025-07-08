@@ -26,7 +26,7 @@ redis_client.on('error', (err) => {
 app.get ('/photos', async(req, res) => {
     try {
         const albumId = req.query.albumId;
-        const cachedPhotos = await redis_client.get('photo')
+        const cachedPhotos = await redis_client.get(`photo?albumId=${albumId}`)
         if(cachedPhotos){
             console.log('hit cache')
             return res.status(200).json({
@@ -35,8 +35,9 @@ app.get ('/photos', async(req, res) => {
                 data: JSON.parse(cachedPhotos)
             })
         } else{
+            console.log('cache miss')
             const { data } = await axios.get('https://jsonplaceholder.typicode.com/photos', { params: { albumId }})
-            redis_client.setEx('photo', DEFAULT_EXPIRATION_TIME, JSON.stringify(data))
+            redis_client.setEx(`photo?albumId=${albumId}`, DEFAULT_EXPIRATION_TIME, JSON.stringify(data))
             return res.status(200).json({
                 success: true,
                 message: 'fetched photo successfully',
